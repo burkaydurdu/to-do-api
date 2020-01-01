@@ -7,9 +7,13 @@
 
 (defn now [] (new java.util.Date))
 
+(def exp-data (partial apply conj))
+
 (defn register-user [params]
-  (let [_ (println params)]
-    (j/insert! db :users (conj {:id (gen-id)} params))))
+  (try
+    (select-keys (exp-data (j/insert! db :users (conj {:id (gen-id)} params))) [:id :name :email])
+    (catch Exception e
+      {:error true :message (.getMessage e)})))
 
 (defn create-state [params]
   (j/insert! db :states (conj {:id (gen-id)

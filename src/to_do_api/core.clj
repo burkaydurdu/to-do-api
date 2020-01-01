@@ -29,7 +29,9 @@
 
 (defroutes rr
   (POST "/register" {params :body} 
-        (println params))
+        (let [data (query/register-user params)
+              error? (boolean (:error data))]
+          {:status (if error? 404 200) :body data}))
   (POST "/state" {params :multipart-params} (query/create-state params))
   (PUT "/state"  {params :multipart-params} (query/update-state params))
   (DELETE "/state" request (query/delete-state request))
@@ -43,6 +45,7 @@
       wrap-reload
       (wrap-defaults api-defaults)
       wrap-json-response
+      wrap-json-body
       wrap-keyword-params
       wrap-params
       wrap-multipart-params
