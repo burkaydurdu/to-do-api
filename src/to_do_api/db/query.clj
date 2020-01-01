@@ -9,11 +9,30 @@
 
 (def exp-data (partial apply conj))
 
+(defn serializer-data [data data-keys]
+  (if (vector? data-keys)
+    (select-keys data data-keys)
+    data))
+
 (defn register-user [params]
   (try
-    (select-keys (exp-data (j/insert! db :users (conj {:id (gen-id)} params))) [:id :name :email])
+    (-> (j/insert! db :users (conj {:id (gen-id)} params))
+        exp-data
+        (serializer-data [:id :name :email]))
     (catch Exception e
       {:error true :message (.getMessage e)})))
+
+(defn get-user [params]
+  (let [email (:email params)
+        password (:password params)
+        id (gen-id)]
+    (try
+      (j/update! db :users {:token id} ["email = ? and password = ?" email password])
+      (-> (j/query db ["SELECT *FROM users where email = ? and password = ?" email password]
+                   {:result-set-fn first})
+          (serializer-data [:id :name :email :token]))
+      (catch Exception e
+        {:error true :message (.getMessage e)}))))
 
 (defn create-state [params]
   (j/insert! db :states (conj {:id (gen-id)

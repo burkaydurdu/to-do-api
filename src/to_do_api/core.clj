@@ -14,7 +14,6 @@
             [compojure.core :refer :all]
             [to-do-api.db.query :as query]))
 
-
 #_(defn session-handler 
   [{session :session cookies :cookies}]
   (let [count (:count session 0)
@@ -29,23 +28,26 @@
 
 (defroutes rr
   (POST "/register" {params :body} 
-        (let [data (query/register-user params)
+        (let [data   (query/register-user params)
               error? (boolean (:error data))]
           {:status (if error? 404 200) :body data}))
+  (POST "/login" {params :body}
+       (let [data (query/get-user params)
+             error? (or (boolean (:error data)) (empty? data))]
+         {:status (if error? 404 200) :body data}))
   (POST "/state" {params :multipart-params} (query/create-state params))
   (PUT "/state"  {params :multipart-params} (query/update-state params))
-  (DELETE "/state" request (query/delete-state request))
+  (DELETE "/state" request (query/delete-state request)))
+
   ;(GET "/ip" request (session-handler request))
   ;(GET "/dede" [] (r/content-type (r/response {:name "burkay"}) "text/json")) 
-  )
-
 (def handler
     (->  
       rr
       wrap-reload
       (wrap-defaults api-defaults)
+      (wrap-json-body {:keywords? true})
       wrap-json-response
-      wrap-json-body
       wrap-keyword-params
       wrap-params
       wrap-multipart-params
