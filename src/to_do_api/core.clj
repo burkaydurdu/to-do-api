@@ -26,18 +26,28 @@
         (assoc :cookies {:session-id {:value "session-id-hash"}})
         (assoc :session session))))
 
+(defn todo-response [data]
+  (let [error? (boolean (:error data))]
+    {:status (if error? 404 200) :body data}))
+
+(defn request-control [request]
+  (let [header (:headers request)
+        token (get header "token")]
+    {:user (query/get-user-with-token token)}))
+
 (defroutes rr
   (POST "/register" {params :body} 
-        (let [data   (query/register-user params)
-              error? (boolean (:error data))]
-          {:status (if error? 404 200) :body data}))
+        (todo-response (query/query-control :register params)))
   (POST "/login" {params :body}
-       (let [data (query/get-user params)
-             error? (or (boolean (:error data)) (empty? data))]
-         {:status (if error? 404 200) :body data}))
-  (POST "/state" {params :multipart-params} (query/create-state params))
-  (PUT "/state"  {params :multipart-params} (query/update-state params))
-  (DELETE "/state" request (query/delete-state request)))
+        (todo-response (query/query-control :login params)))
+  (GET "/state" request
+        (todo-response (query/query-control :state (request-control request))))
+  (POST "/state" {params :body} 
+        (todo-response (query/query-control :create-state params)))
+  (PUT "/state"  {params :body}  
+       (todo-response (query/query-control :update-state params)))
+  (DELETE "/state" {params :body} 
+          (todo-response (query/query-control :delete-state params))))
 
   ;(GET "/ip" request (session-handler request))
   ;(GET "/dede" [] (r/content-type (r/response {:name "burkay"}) "text/json")) 
