@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS states(
   created_at date,
   updated_at date,
   all_done boolean DEFAULT false,
-  s_order SERIAL);
+  s_order INTEGER);

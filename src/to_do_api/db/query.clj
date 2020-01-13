@@ -10,7 +10,7 @@
 
 (defn gen-id [] (str (java.util.UUID/randomUUID)))
 
-(defn now [] (new java.util.Date))
+(def date (java.util.TimeZone/setDefault (java.util.TimeZone/getTimeZone "UTC")))
 
 (defn serializer-data [data data-keys]
   (if (vector? data-keys)
@@ -39,6 +39,16 @@
   (j/insert! db :states (conj {:id (gen-id)
                                :created_at (now)} params)))
 
+(defn- create-and-update [params]
+  (let [user-id (-> params :user :id)
+        data    (map #(assoc % :user_id user-id) (:body params))
+        _ (println data)]
+    (map #(j/execute! db ["INSERT INTO states (id, user_id, title, all_done, s_order, created_at)
+                           VALUES (?,?,?,?,?,?) ON CONFLICT (id)
+                           DO UPDATE SET title = EXCLUDED.title, all_done = EXCLUDED.all_done,
+                           s_order = EXCLUDED.s_order, updated_at = EXCLUDED.created_at;"
+                          (:id %) (:user_id %) (:title %) (:all_done %) (:s_order %) date]) data)))
+
 (defn- update-state [params]
   (j/update! db :states (conj {:updated_at (now)}
                               params) ["id = ?" (:id params)]))
@@ -53,15 +63,17 @@
     :login    (= (count (select-keys params login-params))
                  (count login-params))
     :state    true
+    :state-crup true
     false))
 
 (defn query-control [role params]
   (try
     (if (params-control role params)
         (case role
-          :register  (register-user params)
-          :login     (get-user params)
-          :state     (get-user-states (:user params)))
+          :register   (register-user params)
+          :login      (get-user params)
+          :state      (get-user-states (:user params))
+          :state-crup (create-and-update params))
         (throw (Exception. "Invalid params")))
     (catch Exception e
       {:error true :message (.getMessage e)})))

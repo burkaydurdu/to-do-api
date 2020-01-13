@@ -33,7 +33,8 @@
 (defn request-control [request]
   (let [header (:headers request)
         token (get header "token")]
-    {:user (query/get-user-with-token token)}))
+    {:user (query/get-user-with-token token)
+     :body (:body request)}))
 
 (defroutes rr
   (POST "/register" {params :body} 
@@ -42,8 +43,8 @@
         (todo-response (query/query-control :login params)))
   (GET "/state" request
         (todo-response (query/query-control :state (request-control request))))
-  (POST "/state" {params :body} 
-        (todo-response (query/query-control :create-state params)))
+  (POST "/state" request 
+        (todo-response (query/query-control :state-crup (request-control request))))
   (PUT "/state"  {params :body}  
        (todo-response (query/query-control :update-state params)))
   (DELETE "/state" {params :body} 
