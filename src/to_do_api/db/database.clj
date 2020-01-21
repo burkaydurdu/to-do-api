@@ -1,5 +1,4 @@
-(ns to-do-api.db.database
-  (:require [clojure.java.jdbc :as j]))
+(ns to-do-api.db.database)
 
 (def db {:dbtype "postgresql"
          :dbname "to_do"

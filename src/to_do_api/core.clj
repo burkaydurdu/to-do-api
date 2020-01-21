@@ -44,14 +44,8 @@
   (GET "/state" request
         (todo-response (query/query-control :state (request-control request))))
   (POST "/state" request 
-        (todo-response (query/query-control :state-crup (request-control request))))
-  (PUT "/state"  {params :body}  
-       (todo-response (query/query-control :update-state params)))
-  (DELETE "/state" {params :body} 
-          (todo-response (query/query-control :delete-state params))))
+        (todo-response (query/query-control :states (request-control request))))) 
 
-  ;(GET "/ip" request (session-handler request))
-  ;(GET "/dede" [] (r/content-type (r/response {:name "burkay"}) "text/json")) 
 (def handler
     (->  
       rr
