@@ -1,6 +1,7 @@
 (ns to-do-api.db.query
   (:require [clojure.java.jdbc :as j]
-            [to-do-api.db.database :refer [db]]))
+            [to-do-api.db.database :refer [db]]
+            [digest :as digest]))
 
 (def register-params [:name :email :gender :password])
 
@@ -19,7 +20,8 @@
     :else data))
 
 (defn- register-user [params]
-  (-> (j/insert! db :users (conj {:id (gen-id)} params))
+  (-> (j/insert! db :users (merge params {:id (gen-id)
+                                          :password (digest/md5 (:password params))}))
       exp-data
       (serializer-data [:id :name :email])))
 
@@ -27,10 +29,10 @@
   (j/query db ["SELECT *FROM users where token = ?" token] {:result-set-fn first}))
 
 (defn- set-token-in-user [email password]
-  (j/update! db :users {:token (gen-id)} ["email = ? and password = ?" email password]))
+  (j/update! db :users {:token (gen-id)} ["email = ? and password = ?" email (digest/md5 password)]))
 
 (defn- find-user [email password]
-  (-> (j/query db ["SELECT *FROM users where email = ? and password = ?" email password] {:result-set-fn first})
+  (-> (j/query db ["SELECT *FROM users where email = ? and password = ?" email (digest/md5 password)] {:result-set-fn first})
       (serializer-data [:id :name :email :token])))
 
 (defn- get-user [params]
@@ -75,6 +77,9 @@
         data    (-> params :body :delete-list)]
     (map #(j/delete! db :states ["id = ? and user_id = ?" % user-id]) data)))
 
+(defn- delete-user-token [user]
+  (j/update! db :users {:token nil} ["id = ? and token = ?" (:id user) (:token user)]))
+
 (defn- params-control [role params]
   (case role
     :register (= (count (select-keys params register-params))
@@ -83,6 +88,7 @@
                  (count login-params))
     :state    true
     :states   true
+    :logout   (-> params :user nil? not)
     false))
 
 (defn query-control [role params]
@@ -92,7 +98,8 @@
           :register   (register-user params)
           :login      (get-user params)
           :state      (get-user-states (:user params))
-          :states     (create-and-update params))
+          :states     (create-and-update params)
+          :logout     (delete-user-token (:user params)))
         (throw (Exception. "Invalid params")))
     (catch Exception e
       {:error true :message (.getMessage e)})))

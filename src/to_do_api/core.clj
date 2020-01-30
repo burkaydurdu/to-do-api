@@ -14,18 +14,6 @@
             [compojure.core :refer :all]
             [to-do-api.db.query :as query]))
 
-#_(defn session-handler 
-  [{session :session cookies :cookies}]
-  (let [count (:count session 0)
-        session (assoc session :count (inc count))
-        response  (r/response {:name "Burkay"
-                               :surname "Durdu"
-                               :session (:count session)
-                               :cookies cookies})]
-     (-> (r/content-type response "text/plain")
-        (assoc :cookies {:session-id {:value "session-id-hash"}})
-        (assoc :session session))))
-
 (defn todo-response [data]
   (let [error? (boolean (:error data))]
     {:status (if error? 404 200) :body data}))
@@ -41,6 +29,8 @@
         (todo-response (query/query-control :register params)))
   (POST "/login" {params :body}
         (todo-response (query/query-control :login params)))
+  (POST "/logout" request
+        (todo-response (query/query-control :logout (request-control request))))
   (GET "/state" request
         (todo-response (query/query-control :state (request-control request))))
   (POST "/state" request 
