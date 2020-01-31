@@ -5,4 +5,7 @@ CREATE TABLE IF NOT EXISTS users(
   password text NOT NULL,
   gender text,
   token text,
-  reset_token text);
+  reset_token text,
+  dark_mode boolean DEFAULT false,
+  font_size INTEGER DEFAULT 18,
+  font text);

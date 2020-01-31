@@ -7,6 +7,8 @@
 
 (def login-params [:email :password])
 
+(def user-update-params [:name :dark_mode :font_size])
+
 (def exp-data (partial apply conj))
 
 (defn gen-id [] (str (java.util.UUID/randomUUID)))
@@ -31,9 +33,12 @@
 (defn- set-token-in-user [email password]
   (j/update! db :users {:token (gen-id)} ["email = ? and password = ?" email (digest/md5 password)]))
 
+(defn- user-update [params]
+  (j/update! db :users (:body params) ["token = ?" (-> params :user :token)]))
+
 (defn- find-user [email password]
   (-> (j/query db ["SELECT *FROM users where email = ? and password = ?" email (digest/md5 password)] {:result-set-fn first})
-      (serializer-data [:id :name :email :token])))
+      (serializer-data [:id :name :email :token :dark_mode :font_size])))
 
 (defn- get-user [params]
   (let [email (:email params)
@@ -49,7 +54,7 @@
 (defn multi-create-and-update-query [data t-con]
   (if (empty? data)
     '(1)
-    (j/db-do-prepared 
+    (j/db-do-prepared
       t-con
       (concat ["INSERT INTO states (id, user_id, title, all_done, s_order, created_at)
                VALUES (?,?,?,?,?,NOW()::timestamp) ON CONFLICT (id)
@@ -59,7 +64,7 @@
 (defn multi-delete-query [data t-con]
   (if (empty? data)
     '(1)
-    (j/db-do-prepared 
+    (j/db-do-prepared
       t-con
       (concat ["DELETE FROM states Where id = ? and user_id = ?"] data) {:multi? true})))
 
@@ -89,17 +94,20 @@
     :state    true
     :states   true
     :logout   (-> params :user nil? not)
+    :user-update (= (count (select-keys (:body params) user-update-params))
+                    (count user-update-params))
     false))
 
 (defn query-control [role params]
   (try
     (if (params-control role params)
         (case role
-          :register   (register-user params)
-          :login      (get-user params)
-          :state      (get-user-states (:user params))
-          :states     (create-and-update params)
-          :logout     (delete-user-token (:user params)))
+          :register    (register-user params)
+          :login       (get-user params)
+          :state       (get-user-states (:user params))
+          :states      (create-and-update params)
+          :logout      (delete-user-token (:user params))
+          :user-update (user-update params))
         (throw (Exception. "Invalid params")))
     (catch Exception e
       {:error true :message (.getMessage e)})))

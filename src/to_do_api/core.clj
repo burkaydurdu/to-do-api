@@ -25,19 +25,21 @@
      :body (:body request)}))
 
 (defroutes rr
-  (POST "/register" {params :body} 
+  (POST "/register" {params :body}
         (todo-response (query/query-control :register params)))
   (POST "/login" {params :body}
         (todo-response (query/query-control :login params)))
   (POST "/logout" request
         (todo-response (query/query-control :logout (request-control request))))
+  (PUT "/user" request
+        (todo-response (query/query-control :user-update (request-control request))))
   (GET "/state" request
         (todo-response (query/query-control :state (request-control request))))
-  (POST "/state" request 
-        (todo-response (query/query-control :states (request-control request))))) 
+  (POST "/state" request
+        (todo-response (query/query-control :states (request-control request)))))
 
 (def handler
-    (->  
+    (->
       rr
       wrap-reload
       (wrap-defaults api-defaults)
