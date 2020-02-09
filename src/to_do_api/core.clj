@@ -24,7 +24,16 @@
     {:user (query/get-user-with-token token)
      :body (:body request)}))
 
+(defn mail-verify-callback [data]
+  (conj (todo-response data) {:headers {"Content-Type" "text/plain"}}))
+
 (defroutes rr
+  (GET "/reset_password" {params :params}
+       (todo-response (query/query-control :reset-password params)))
+  (GET "/create_password" {params :params}
+       (todo-response (query/query-control :create-password params)))
+  (GET "/verify_mail" {params :params}
+        (mail-verify-callback (query/query-control :mail-verify params)))
   (POST "/register" {params :body}
         (todo-response (query/query-control :register params)))
   (POST "/login" {params :body}
