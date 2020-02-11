@@ -31,11 +31,11 @@
   "http://localhost:3449")
 
 (defn register-mail-body [user mail-verify-token]
-  (format "<h3>Hello %s </h3><br/><a href=\"%s/verify_mail?email=%s&token=%s\"> Confirm Mail </a>"
+  (format "<h3> Hello %s </h3><br/><a href=\"%s/verify_mail?email=%s&token=%s\"> Activate Account </a>"
           (:name user) (get-server-ip-address) (:email user) mail-verify-token))
 
 (defn reset-password-mail-body [email reset-token]
-  (format "<h3>Hello</h3><br/><a href=\"%s/#/create_password?email=%s&token=%s\"> Reset Password </a>"
+  (format "<h3> Hello </h3><br/><a href=\"%s/#/create_password?email=%s&token=%s\"> Reset Password </a>"
            (get-front-ip-address) email  reset-token))
 
 (defn- register-user [params]
@@ -45,8 +45,8 @@
                                                      :password (digest/md5 (:password params))}))
                  exp-data
                  (serializer-data [:id :name :email]))
-        mail (send-to (:email params) "Todo Verification Mail" [{:type "text/html"
-                                                                 :content (register-mail-body user mail-verify-token)}])]
+        mail (send-to (:email params) "[TODO] Activate Account" [{:type "text/html"}
+                                                                  :content (register-mail-body user mail-verify-token)])]
     (if mail
       user
       (throw (Exception. "Error")))))
@@ -116,10 +116,10 @@
 (defn- reset-password [params]
   (let [reset-token (gen-id)
         user (j/update! db :users {:reset_password_token reset-token} ["email = ?" (:email params)])
-        mail (send-to (:email params) "Reset Password" [{:type "text/html"
-                                                         :content (reset-password-mail-body
-                                                                    (:email params)
-                                                                    reset-token)}])]
+        mail (send-to (:email params) "[TODO] Reset Password" [{:type "text/html"
+                                                                :content (reset-password-mail-body
+                                                                          (:email params)
+                                                                          reset-token)}])]
     (if (and (= 1 (first user)) mail)
       user
       (throw (Exception. "User not found")))))
