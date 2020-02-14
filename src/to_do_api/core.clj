@@ -59,8 +59,7 @@
       wrap-multipart-params
       (wrap-cors :access-control-allow-origin [#".*"]
                  :access-control-allow-methods [:get :post :put :delete])
-      wrap-gzip
-))
+      wrap-gzip))
 
 (defn -main []
   (jetty/run-jetty handler {:port 3011}))

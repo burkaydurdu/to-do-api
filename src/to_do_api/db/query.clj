@@ -14,9 +14,9 @@
 
 (def exp-data (partial apply conj))
 
-(defn gen-id [] (str (java.util.UUID/randomUUID)))
-
 (def date (java.util.TimeZone/setDefault (java.util.TimeZone/getTimeZone "UTC")))
+
+(defn gen-id [] (str (java.util.UUID/randomUUID)))
 
 (defn serializer-data [data data-keys]
   (cond
@@ -25,10 +25,10 @@
     :else data))
 
 (defn get-server-ip-address []
- "http://localhost:3011")
+ (or (System/getenv "SERVER_IP") "http://localhost:3011"))
 
 (defn get-front-ip-address []
-  "http://localhost:3449")
+  (or (System/getenv "FRONT_IP") "http://localhost:3449"))
 
 (defn register-mail-body [user mail-verify-token]
   (format "<h3> Hello %s </h3><br/><a href=\"%s/verify_mail?email=%s&token=%s\"> Activate Account </a>"

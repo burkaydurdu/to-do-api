@@ -30,21 +30,23 @@
 
   :ring {:handler to-do-api.core/handler}
 
+  :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
+
   :min-lein-version "2.6.1"
 
   :migratus {:store :database
              :migration-dir "migrations/"
              :db {:classname "org.postgresql.Driver"
                   :subprotocol "postgresql"
-                  :subname "//localhost/to_do"
-                  :user "burkaydurdu"}}
+                  :subname ~(or (System/getenv "POSTGRES_SUBNAME") "//localhost/to_do")
+                  :user ~(or (System/getenv "POSTGRES_USER") "burkaydurdu")
+                  :password ~(or (System/getenv "POSTGRES_PASSWORD") nil)}}
 
-  :profiles {:uberjar {:aot :all}
+  :profiles {:dev {:dependencies [[binaryage/devtools "0.9.10"]
+                                  [figwheel-sidecar "0.5.18"]]}
+             :uberjar {:omit-source  true
+                        :aot          :all
+                        :auto-clean   false
+                        :uberjar-name "todo_back.jar"
+                        :source-paths ["src/clj" "src/cljs"]}})
 
-             :dev {:dependencies [[binaryage/devtools "0.9.10"]
-                                  [figwheel-sidecar "0.5.18"]
-                                  [ring "1.7.1"]
-                                  [compojure "1.6.1"]
-                                  [amalloy/ring-gzip-middleware "0.1.3"]]
-
-                   :plugins [[lein-figwheel "0.5.18"]]}})
