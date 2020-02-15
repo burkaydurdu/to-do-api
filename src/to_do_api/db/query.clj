@@ -2,7 +2,8 @@
   (:require [clojure.java.jdbc :as j]
             [to-do-api.db.database :refer [db]]
             [digest :as digest]
-            [to-do-api.mail.send-mail :refer [send-to]]))
+            [to-do-api.mail.send-mail :refer [send-to]]
+            [clojure.core.async :as async]))
 
 (def register-params [:name :email :gender :password])
 
@@ -15,6 +16,8 @@
 (def exp-data (partial apply conj))
 
 (def date (java.util.TimeZone/setDefault (java.util.TimeZone/getTimeZone "UTC")))
+
+(def mail-channel (async/chan 1))
 
 (defn gen-id [] (str (java.util.UUID/randomUUID)))
 
@@ -38,17 +41,22 @@
   (format "<h3> Hello </h3><br/><a href=\"%s/#/create_password?email=%s&token=%s\"> Reset Password </a>"
            (get-front-ip-address) email  reset-token))
 
+(defn- async-mail-fn [to subject content]
+  (async/go
+    (async/>! mail-channel (send-to to
+                                    subject
+                                    [{:type "text/html"
+                                      :content content}]))))
+
 (defn- register-user [params]
   (let [mail-verify-token (gen-id)
         user (-> (j/insert! db :users (merge params {:id (gen-id)
                                                      :mail_verify_token mail-verify-token
                                                      :password (digest/md5 (:password params))}))
                  exp-data
-                 (serializer-data [:id :name :email]))
-        mail (send-to (:email params) "[TODO] Activate Account" [{:type "text/html"}
-                                                                  :content (register-mail-body user mail-verify-token)])]
-    (if mail
-      user
+                 (serializer-data [:id :name :email]))]
+    (if user
+      (do (async-mail-fn (:email params) "[TODO] Activate Account" (register-mail-body user mail-verify-token)) user)
       (throw (Exception. "Error")))))
 
 (defn get-user-with-token [token]
@@ -115,13 +123,9 @@
 
 (defn- reset-password [params]
   (let [reset-token (gen-id)
-        user (j/update! db :users {:reset_password_token reset-token} ["email = ?" (:email params)])
-        mail (send-to (:email params) "[TODO] Reset Password" [{:type "text/html"
-                                                                :content (reset-password-mail-body
-                                                                          (:email params)
-                                                                          reset-token)}])]
-    (if (and (= 1 (first user)) mail)
-      user
+        user (j/update! db :users {:reset_password_token reset-token} ["email = ?" (:email params)])]
+    (if (= 1 (first user))
+      (do (async-mail-fn (:email params) "[TODO] Reset Password" (reset-password-mail-body (:email params) reset-token)) user)
       (throw (Exception. "User not found")))))
 
 (defn- create-password [params]

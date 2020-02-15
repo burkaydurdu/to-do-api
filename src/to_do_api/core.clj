@@ -28,6 +28,8 @@
   (conj (todo-response data) {:headers {"Content-Type" "text/plain"}}))
 
 (defroutes rr
+  (GET "/check_token" request
+       (todo-response {:error (-> (request-control request) :user nil?)}))
   (GET "/reset_password" {params :params}
        (todo-response (query/query-control :reset-password params)))
   (GET "/create_password" {params :params}
