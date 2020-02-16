@@ -31,7 +31,7 @@
  (or (System/getenv "SERVER_IP") "http://localhost:3011"))
 
 (defn get-front-ip-address []
-  (or (System/getenv "FRONT_IP") "http://localhost:3449"))
+  (or (System/getenv "FRONT_AD") "http://localhost:3449"))
 
 (defn register-mail-body [user mail-verify-token]
   (format "<h3> Hello %s </h3><br/><a href=\"%s/verify_mail?email=%s&token=%s\"> Activate Account </a>"
