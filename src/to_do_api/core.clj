@@ -12,6 +12,7 @@
             [ring.middleware.gzip :refer [wrap-gzip]]
             [ring.middleware.cors :refer [wrap-cors]]
             [compojure.core :refer :all]
+            [compojure.route :as route]
             [to-do-api.db.query :as query]))
 
 (defn todo-response [data]
@@ -27,6 +28,13 @@
 (defn mail-verify-callback [data]
   (conj (todo-response data) {:headers {"Content-Type" "text/plain"}}))
 
+(def not-found-data "<meta http-equiv = 'refresh' content = '0; url = http://listoftodo.com' />")
+
+(defn mail-verify [data]
+  (if (= data [1])
+    not-found-data
+    not-found-data))
+
 (defroutes rr
   (GET "/check_token" request
        (todo-response {:error (-> (request-control request) :user nil?)}))
@@ -35,7 +43,7 @@
   (GET "/create_password" {params :params}
        (todo-response (query/query-control :create-password params)))
   (GET "/verify_mail" {params :params}
-        (mail-verify-callback (query/query-control :mail-verify params)))
+        (mail-verify (query/query-control :mail-verify params)))
   (POST "/register" {params :body}
         (todo-response (query/query-control :register params)))
   (POST "/login" {params :body}
@@ -47,7 +55,8 @@
   (GET "/state" request
         (todo-response (query/query-control :state (request-control request))))
   (POST "/state" request
-        (todo-response (query/query-control :states (request-control request)))))
+        (todo-response (query/query-control :states (request-control request))))
+  (route/not-found not-found-data))
 
 (def handler
     (->
